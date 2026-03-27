@@ -4,7 +4,6 @@ const { Client } = require('@elastic/elasticsearch');
 
 const app = express();
 
-// הגדרת הלקוח עם מצב תאימות
 const client = new Client({ 
   node: 'http://localhost:9200',
   enableCompatibilityMode: true 
@@ -13,14 +12,14 @@ const client = new Client({
 app.use(cors());
 app.use(express.json());
 
-// --- נתיב החיפוש (GET) ---
+// --- search dirctory (GET) ---
 app.get('/search', async (req, res) => {
   try {
     const { q } = req.query;
     if (!q) return res.json([]);
 
     const result = await client.search({
-      index: 'sensors_data', // שינינו ל-sensors_data כדי שיתאים לחיישן
+      index: 'sensors_data', 
       query: {
         match: {
           sensor_name: {
@@ -37,18 +36,18 @@ app.get('/search', async (req, res) => {
   }
 });
 
-// --- הנתיב החסר: הוספת נתונים מהחיישן (POST) ---
+// --- add (POST) ---
 app.post('/add', async (req, res) => {
   try {
     const { name, value } = req.body;
     console.log(`Incoming data from sensor: ${name} = ${value}`);
 
     const result = await client.index({
-      index: 'sensors_data', // שם האינדקס שנשתמש בו בקיבאנה
+      index: 'sensors_data', // kibana index name
       document: {
         sensor_name: name,
         sensor_value: parseFloat(value),
-        timestamp: new Date() // הוספת זמן אוטומטית לגרפים
+        timestamp: new Date() // graph auto timestamp
       },
       refresh: true
     });
