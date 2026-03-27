@@ -1,0 +1,32 @@
+Summary of issue and fix steps
+
+1. Initial error:
+   - Node server failed with ReferenceError: File is not defined in undici/web/webidl (from @elastic/transport/undici)
+   - Root cause: Node.js version 18.19.1 and @elastic/elasticsearch 9.x dependency requiring Node 20+ for proper undici/Web API support.
+
+2. Action taken: upgrade Node.js using nvm
+   - Installed nvm (already installed), loaded it in shell.
+   - nvm install 20 (Node.js v20.20.2)
+   - nvm alias default 20
+   - Confirmed Node uses v20.20.2.
+
+3. Then new error: SyntaxError: Identifier 'Client' has already been declared in index.js
+   - In index.js the Client was imported twice.
+   - Removed duplicate line, leaving one `const { Client } = require('@elastic/elasticsearch');`.
+
+4. Then error: ResponseError media_type_header_exception (Accept version must be either version 8 or 7, but found 9)
+   - Caused by @elastic/elasticsearch attempting to talk to a 8.x cluster with compatibility header mismatched.
+   - Updated client creation to compatibility mode:
+     const client = new Client({ node: 'http://localhost:9200', apiVersion: '8.12' });
+
+5. Verified via direct Node script:
+   - c.search works and returns hits 0 (that is valid, no data yet) with no compatibility exception.
+
+6. Express route initially still saw old error due to stale process.
+   - killed and restarted server process.
+   - Now route returns [] not error.
+
+7. Final status:
+   - Server runs on Node 20.
+   - Express search endpoint works against Elasticsearch 8 cluster.
+   - Need to index documents into `my_index` for non-empty result.
